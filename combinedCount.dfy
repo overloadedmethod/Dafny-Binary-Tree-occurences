@@ -46,15 +46,15 @@ method CountOccurrences(t: Tree, key: int) returns (count: nat)
 		count := RecEffective(t, key);
   }
 
-lemma LCountingTree(root: Tree, val: int, key:int, left: Tree, right: Tree, leftAcc: nat, rightAcc: nat)
+lemma LCountingTree(tree: Tree, val: int, key:int, left: Tree, right: Tree, leftAcc: nat, rightAcc: nat)
 	requires rightAcc == NumbersInTree(right)[key] 
 	requires leftAcc == NumbersInTree(left)[key] 
-	requires  root == Node(val,left,right) 
-	ensures (if val == key then 1 else 0) + leftAcc + rightAcc == NumbersInTree(root)[key]
+	requires  tree == Node(val,left,right) 
+	ensures (if val == key then 1 else 0) + leftAcc + rightAcc == NumbersInTree(tree)[key]
 {
 	calc {
-		NumbersInTree(root)[key];
-	== { assert root == Node(val,left,right); } 
+		NumbersInTree(tree)[key];
+	== { assert tree == Node(val,left,right); } 
 		(if val == key then 1 else 0) + NumbersInTree(left)[key] + NumbersInTree(right)[key];
 	== 
 		(if val == key then 1 else 0) + leftAcc + rightAcc;
