@@ -55,37 +55,36 @@ function OccurencesForest(ntl: seq<Tree>, key:int): nat
 	if ntl == [] then 0 else NumbersInTree(ntl[0])[key] + OccurencesForest(ntl[1..], key)
 }
 
-// method CountOccurrences(t: Tree, key: int) returns (count: nat)
-// 	requires BST(t)
-// 	ensures count == NumbersInTree(t)[key]
-//   {
-//     var ntl := [t];
-//     count := 0;
-//     while ntl != []
-//       invariant count == NumbersInTree(t)[key] - OccurencesForest(ntl, key)
-//       decreases ForestSize(ntl)
-//       {
-//         ghost var V0 := ForestSize(ntl);
-//         var nt;
-//         // pop
-//         nt, ntl := ntl[0], ntl[1..];
-//         match nt {
-//         case Empty =>
-//           // skip
-//         case Node(n', nt1, nt2) =>
-//           if n' == key { 
-//             count := count + 1;          
-//             ntl := [nt1, nt2] + ntl;
-//             }
-//         }
-//         assert ForestSize(ntl) < V0;
-//       }
-//       	assert ntl == [];
-//         assert count == NumbersInTree(t)[key] - OccurencesForest(ntl, key);
-//         // ==>
-//         assert count == NumbersInTree(t)[key];
-//   }
-
+method CountOccurrences(t: Tree, key: int) returns (count: nat)
+	requires BST(t)
+	ensures count == NumbersInTree(t)[key]
+  {
+    var ntl := [t];
+    count := 0;
+    while ntl != []
+      invariant count == NumbersInTree(t)[key] - OccurencesForest(ntl, key)
+      decreases ForestSize(ntl)
+      {
+        ghost var V0 := ForestSize(ntl);
+        var nt;
+        // pop
+        nt, ntl := ntl[0], ntl[1..];
+        match nt {
+        case Empty =>
+          // skip
+        case Node(n', nt1, nt2) =>
+          if n' == key { 
+            count := count + 1;          
+            }
+          ntl := [nt1, nt2] + ntl;
+        }
+        assert ForestSize(ntl) < V0;
+      }
+      	assert ntl == [];
+        assert count == NumbersInTree(t)[key] - OccurencesForest(ntl, key);
+        // ==>
+        assert count == NumbersInTree(t)[key];
+  }
 
 lemma L1(nt: Tree, n': int, key:int, nt1: Tree, nt2: Tree, occurrences1: nat, occurrences2: nat)
 	requires occurrences2 == NumbersInTree(nt2)[key] // pre0
@@ -102,7 +101,7 @@ lemma L1(nt: Tree, n': int, key:int, nt1: Tree, nt2: Tree, occurrences1: nat, oc
 	}
 }
 
-method CountOccurrences(t: Tree, key: int) returns (count: nat)
+method RecCountOccurrences(t: Tree, key: int) returns (count: nat)
 	requires BST(t)
 	ensures count == NumbersInTree(t)[key]
   {
@@ -130,16 +129,3 @@ method CountOccurrences(t: Tree, key: int) returns (count: nat)
 	}
 	assert count == NumbersInTree(t)[key];
 }
-
-// TODO: perform a stepwise-refinement of this specification into iterative or recursive executable code;
-// you should document each step fully, stating the name of the applied law, the specification of called methods
-// (that will act as a starting point for further steps), and lemma specifications
-// (for documenting the proof obligations), where needed;
-// you should submit the program in a form that compiles with no errors (in Dafny 2.2.0) and generates an executable file;
-// trivially-correct unproved lemmas may still be awarded full points; please leave them with an empty body ("{}"),
-// a "{:verify false}" annotation (to allow the generation of an executable file), and a short verbal justification.
-// DO NOT CHANGE THE SPECIFICATION of predicate "BST", of function "NumbersInTree", or of method "CountOccurrences"
-// (except for adding a "decreases" clause in case of a recursive solution);
-// unusual code made of complex expressions (such as "forall","exists","in","!in") or with "such that" assignment statements (":|") is NOT ACCEPTABLE;
-// DO NOT USE multisets in the executable code!
-// at most 10% of the grade will be dedicated to the efficiency and worst-case time complexity of your algorithm.
