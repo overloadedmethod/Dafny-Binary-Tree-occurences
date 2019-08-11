@@ -90,28 +90,25 @@ method IterateLeft(q:seq<int>, key:int,prev:nat)returns(next:nat)
 	else {next:=prev;}
 }
 
+
 method FindRange(q: seq<int>, key: int) returns (left: nat, right: nat)
 	requires Sorted(q)
-	ensures left<=right ==> left <= right <= |q|
-	ensures left<=right ==> forall i :: 0 <= i < left ==> q[i] < key
-	ensures left<=right ==> forall i :: right <= i < |q| ==> q[i] > key
-	ensures left<=right ==> forall i :: left <= i < right ==> q[i] == key
+	requires key in q
+	ensures left <= right <= |q|
+	ensures forall i :: 0 <= i < left ==> q[i] < key
+	ensures forall i :: right <= i < |q| ==> q[i] > key
+	ensures forall i :: left <= i < right ==> q[i] == key
   {
 		left:=|q|;
 		right:=0;
 		if |q| == 0 {left:=0;right:=0;}
 		else{
-				var r: int := BinarySearch(q, key);
-				if r<0{
-					left:=|q|+1;right:=|q|;
-				}
-				else{
-					right := FindInitialRight(q,key, r);
-					left := FindInitialLeft(q,key, r);
-				}
-
+			var r: int := BinarySearch(q, key);
+			right := FindInitialRight(q,key, r);
+			left := FindInitialLeft(q,key, r);
 		}
 	}
+
 // TODO: perform a stepwise-refinement of this specification into iterative executable code (using loops);
 // you should document each step fully, stating the name of the applied law, the specification of called methods
 // (that will act as a starting point for further steps), and lemma specifications
@@ -126,7 +123,8 @@ method FindRange(q: seq<int>, key: int) returns (left: nat, right: nat)
 
 method BinarySearch(a: seq<int>, key: int) returns (r: int)
   requires Sorted(a)
-  ensures 0 <= r ==> r < |a| && a[r] == key
+	ensures key in a ==> 0<=r<|a|
+  ensures key in a ==> r < |a| && a[r] == key
 {
   var lo, hi := 0, |a|;
   while lo < hi
