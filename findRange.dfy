@@ -45,15 +45,30 @@ method FindLeft(q:seq<int>, key:int, seed:nat)returns(left:nat)
 method FindRight(q:seq<int>, key:int, seed:nat)returns(right:nat)
 	requires Sorted(q)
 	requires |q| > 0
-	requires 0<seed<|q|
+	requires 0<=seed<|q|
 	requires q[seed] == key
-	ensures seed<=right
-	ensures right+1<|q| ==> q[right + 1] > key
+	ensures seed<right
+	ensures seed < right <= |q| ==> q[right-1]==key
+	ensures right < |q| ==> q[right] > key
+	ensures seed < right <= |q|
 {
-right:=seed;
-while right<|q| && q[right] == key{
-	right := right+1;
+	right:=IterateRight(q,key,seed);
 }
+
+method IterateRight(q:seq<int>, key:int,prev:nat)returns(next:nat)
+	requires Sorted(q)
+	requires |q| > 0
+	requires 0<=prev<|q|
+	requires q[prev] == key
+	ensures q[prev] == key
+	ensures next < |q| ==> q[next]>key
+	ensures next <= |q| ==> q[next-1] == key
+	ensures prev<=next<=|q|
+	decreases |q| - prev
+{
+	if prev+1 == |q| {next:=|q|;}
+	else if q[prev+1] == key {next:=IterateRight(q,key,prev+1);}
+	else {next:=prev+1;}
 }
 
 method FindInitialRight(q:seq<int>, key:int, seed:nat)returns(right:nat)
@@ -61,44 +76,27 @@ method FindInitialRight(q:seq<int>, key:int, seed:nat)returns(right:nat)
 	requires |q| > 0
 	requires 0<=seed<|q|
 	requires q[seed] == key
-	ensures 0<right<=|q|
-	ensures q[right-1]==key
-	ensures forall i :: right <= i < |q| ==> q[i] > key
+	ensures seed < right <= |q| ==> q[right-1]==key
+	ensures right < |q| ==> q[right] > key
+	ensures right<=|q|
 {
-	if |q| == 1{right:=1;}
-	else if seed == |q| - 1 {right:=|q|;}
-	else if seed == 0{
-		if q[seed+1]!=key {right:=1;}
-		else {right:=FindRight(q,key,seed+1);right:=right+1;}
-	}
+	if |q| == 1 || seed == |q| - 1{right:=|q|;}
 	else{
-		right:=FindRight(q,key,seed);right:=right+1;
+		right:=FindRight(q,key,seed);
 	}
-	// if |q| == 1 {right:=1;}
-	// else {
-	// 		if seed > 0 {
-	// 			right:=FindRight(q,key,seed);
-	// 			right:=right+1;
-	// 		}
-	// 		else{
-	// 			if q[seed+1] == key{
-	// 				right:=FindRight(q,key,seed+1);
-	// 				right:=right+1;
-	// 			}
-	// 			else{
-	// 				right:=1;
-	// 			}
-	// 		}
-	// 	}
 }
 
 method FindInitialLeft(q:seq<int>, key:int, seed:nat)returns(left:nat)
+	requires Sorted(q)
 	requires |q| > 0
 	requires 0<=seed<|q|
 	requires q[seed] == key
-	ensures 0<=left<|q|
-	ensures q[left]==key
+	ensures 0<=left<=seed ==> q[left] == key
+	ensures 0<left<=seed ==> q[left - 1] < key
 	ensures forall i :: 0 <= i < left ==> q[i] < key
+	// ensures 0<=left<|q|
+	// ensures q[left]==key
+	// ensures forall i :: 0 <= i < left ==> q[i] < key
 {
 
 }
