@@ -18,6 +18,7 @@ method Main() {
 }
 
 function NumbersInTree(t: Tree): multiset<int>
+decreases t
 {
 	match t {
 		case Empty => multiset([])
@@ -27,6 +28,7 @@ function NumbersInTree(t: Tree): multiset<int>
 
 // a possible definition for a binary search tree:
 predicate BST(t: Tree)
+decreases t
 {
 	match t {
 		case Empty => true
@@ -37,109 +39,64 @@ predicate BST(t: Tree)
 	}
 }
 
-function TreeSize(nt: Tree): nat
-{
-	match nt {
-		case Empty => 1
-		case Node(n',nt1,nt2) => 1+TreeSize(nt1)+TreeSize(nt2)
-	}
-}
 
-function ForestSize(ntl: seq<Tree>): nat
-{
-	if ntl == [] then 0 else TreeSize(ntl[0]) + ForestSize(ntl[1..])
-}
-
-function OccurencesForest(ntl: seq<Tree>, key:int): nat
-{
-	if ntl == [] then 0 else NumbersInTree(ntl[0])[key] + OccurencesForest(ntl[1..], key)
-}
-
-// method CountOccurrences(t: Tree, key: int) returns (count: nat)
-// 	requires BST(t)
-// 	ensures count == NumbersInTree(t)[key]
-//   {
-//     var ntl := [t];
-//     count := 0;
-//     while ntl != []
-//       invariant count == NumbersInTree(t)[key] - OccurencesForest(ntl, key)
-//       decreases ForestSize(ntl)
-//       {
-//         ghost var V0 := ForestSize(ntl);
-//         var nt;
-//         // pop
-//         nt, ntl := ntl[0], ntl[1..];
-//         match nt {
-//         case Empty =>
-//           // skip
-//         case Node(n', nt1, nt2) =>
-//           if n' == key { 
-//             count := count + 1;          
-//             ntl := [nt1, nt2] + ntl;
-//             }
-//         }
-//         assert ForestSize(ntl) < V0;
-//       }
-//       	assert ntl == [];
-//         assert count == NumbersInTree(t)[key] - OccurencesForest(ntl, key);
-//         // ==>
-//         assert count == NumbersInTree(t)[key];
-//   }
-
-
-lemma L1(nt: Tree, n': int, key:int, nt1: Tree, nt2: Tree, occurrences1: nat, occurrences2: nat)
-	requires occurrences2 == NumbersInTree(nt2)[key] // pre0
-	requires occurrences1 == NumbersInTree(nt1)[key] // pre1
-	requires  nt == Node(n',nt1,nt2) // pre2
-	ensures (if n' == key then 1 else 0) + occurrences1 + occurrences2 == NumbersInTree(nt)[key]
+/**
+Recursive solution with lemma though it might work without lemma
+ */
+lemma LCountingTree(tree: Tree, val: int, key:int, left: Tree, right: Tree, leftAcc: nat, rightAcc: nat)
+	requires rightAcc == NumbersInTree(right)[key] 
+	requires leftAcc == NumbersInTree(left)[key] 
+	requires  tree == Node(val,left,right) 
+	ensures (if val == key then 1 else 0) + leftAcc + rightAcc == NumbersInTree(tree)[key]
 {
 	calc {
-		NumbersInTree(nt)[key];
-	== { assert nt == Node(n',nt1,nt2); } // pre2 and the definition of SumTree for Node
-		(if n' == key then 1 else 0) + NumbersInTree(nt1)[key] + NumbersInTree(nt2)[key];
-	== // pre0 and pre1
-		(if n' == key then 1 else 0) + occurrences1 + occurrences2;
+		NumbersInTree(tree)[key];
+	== { assert tree == Node(val,left,right); } 
+		(if val == key then 1 else 0) + NumbersInTree(left)[key] + NumbersInTree(right)[key];
+	== 
+		(if val == key then 1 else 0) + leftAcc + rightAcc;
 	}
 }
+
+method RecEffective(tree: Tree, key: int) returns (count: nat)
+	requires BST(tree)
+	decreases tree
+	ensures count == NumbersInTree(tree)[key]
+  {
+  var leftAcc := 0;
+  var rightAcc := 0;
+	match tree {
+	case Empty =>
+		assert tree == Empty;
+		assert 0 == NumbersInTree(tree)[key];
+		count := 0;
+		assert count == NumbersInTree(tree)[key];
+	case Node(val,left,right) =>
+		assert tree == Node(val,left,right);
+		assert left < tree;
+		assert right < tree;
+    if key < val{
+      leftAcc := RecEffective(left, key);
+    }else{
+			rightAcc:= RecEffective(right, key);
+    }
+		LCountingTree(tree, val, key, left, right, leftAcc, rightAcc); 
+		assert (if val == key then 1 else 0) +  leftAcc + rightAcc == NumbersInTree(tree)[key];
+    count := (if val == key then 1 else 0) +  leftAcc + rightAcc;
+		assert count == NumbersInTree(tree)[key];
+	}
+	assert count == NumbersInTree(tree)[key];
+}
+
+
+/**
+end of recursive solution
+ */
+
 
 method CountOccurrences(t: Tree, key: int) returns (count: nat)
 	requires BST(t)
 	ensures count == NumbersInTree(t)[key]
   {
-	match t {
-	case Empty =>
-		assert t == Empty;
-		// ==>
-		assert 0 == NumbersInTree(t)[key];
-		count := 0;
-		assert count == NumbersInTree(t)[key];
-	case Node(n',nt1,nt2) =>
-		assert t == Node(n',nt1,nt2);
-		assert nt1 < t; // for termination
-		var sum1 := CountOccurrences(nt1, key);
-		assert sum1 == NumbersInTree(nt1)[key];
-		assert nt2 < t; // for termination
-		var sum2 := CountOccurrences(nt2, key);
-		assert sum2 == NumbersInTree(nt2)[key];
-		assert sum1 == NumbersInTree(nt1)[key]; 
-		assert t == Node(n',nt1,nt2); 
-		L1(t, n', key, nt1, nt2, sum1, sum2); 
-		assert (if n' == key then 1 else 0) + sum1 + sum2 == NumbersInTree(t)[key];
-    count := (if n' == key then 1 else 0) + sum1 + sum2;
-		assert count == NumbersInTree(t)[key];
-	}
-	assert count == NumbersInTree(t)[key];
-}
-
-// TODO: perform a stepwise-refinement of this specification into iterative or recursive executable code;
-// you should document each step fully, stating the name of the applied law, the specification of called methods
-// (that will act as a starting point for further steps), and lemma specifications
-// (for documenting the proof obligations), where needed;
-// you should submit the program in a form that compiles with no errors (in Dafny 2.2.0) and generates an executable file;
-// trivially-correct unproved lemmas may still be awarded full points; please leave them with an empty body ("{}"),
-// a "{:verify false}" annotation (to allow the generation of an executable file), and a short verbal justification.
-// DO NOT CHANGE THE SPECIFICATION of predicate "BST", of function "NumbersInTree", or of method "CountOccurrences"
-// (except for adding a "decreases" clause in case of a recursive solution);
-// unusual code made of complex expressions (such as "forall","exists","in","!in") or with "such that" assignment statements (":|") is NOT ACCEPTABLE;
-// DO NOT USE multisets in the executable code!
-// at most 10% of the grade will be dedicated to the efficiency and worst-case time complexity of your algorithm.
+		count := RecEffective(t, key);
+  }

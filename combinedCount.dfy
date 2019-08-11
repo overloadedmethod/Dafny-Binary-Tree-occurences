@@ -39,13 +39,10 @@ decreases t
 	}
 }
 
-method CountOccurrences(t: Tree, key: int) returns (count: nat)
-	requires BST(t)
-	ensures count == NumbersInTree(t)[key]
-  {
-		count := RecEffective(t, key);
-  }
 
+/**
+Recursive solution with lemma though it might work without lemma
+ */
 lemma LCountingTree(tree: Tree, val: int, key:int, left: Tree, right: Tree, leftAcc: nat, rightAcc: nat)
 	requires rightAcc == NumbersInTree(right)[key] 
 	requires leftAcc == NumbersInTree(left)[key] 
@@ -71,7 +68,6 @@ method RecEffective(tree: Tree, key: int) returns (count: nat)
 	match tree {
 	case Empty =>
 		assert tree == Empty;
-		// ==>
 		assert 0 == NumbersInTree(tree)[key];
 		count := 0;
 		assert count == NumbersInTree(tree)[key];
@@ -91,3 +87,16 @@ method RecEffective(tree: Tree, key: int) returns (count: nat)
 	}
 	assert count == NumbersInTree(tree)[key];
 }
+
+
+/**
+end of recursive solution
+ */
+
+
+method CountOccurrences(t: Tree, key: int) returns (count: nat)
+	requires BST(t)
+	ensures count == NumbersInTree(t)[key]
+  {
+		count := RecEffective(t, key);
+  }
