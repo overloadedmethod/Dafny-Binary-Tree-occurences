@@ -100,12 +100,10 @@ method FindRange(q: seq<int>, key: int) returns (left: nat, right: nat)
 		if |q| == 0 {left:=0;right:=0;}
 		else{
 				var r: int := BinarySearch(q, key);
-				// assume 0<=r<|q|;// if value is not exists in the array we cannot find range;
-				// if r < 0 {left:=0;right:=0;}
-				// else{
-					right := FindInitialRight(q,key,r);
-					left := FindInitialLeft(q,key,r);
-				// }
+				assume 0<=r<|q|;// if value is not exists in the array we cannot find range;
+				assert q[r] == key;
+				right := FindInitialRight(q,key,r);
+				left := FindInitialLeft(q,key,r);
 		}
 	}
 // TODO: perform a stepwise-refinement of this specification into iterative executable code (using loops);
@@ -120,9 +118,9 @@ method FindRange(q: seq<int>, key: int) returns (left: nat, right: nat)
 // at most 10% of the grade will be dedicated to the efficiency and worst-case time complexity of your algorithm.
 
 
-method BinarySearch(a: seq<int>, key: int) returns (r: nat)
+method BinarySearch(a: seq<int>, key: int) returns (r: int)
   requires Sorted(a)
-  ensures 0 <= r < |a| ==> r < |a| && a[r] == key
+  ensures 0 <= r ==> r < |a| && a[r] == key
 {
   var lo, hi := 0, |a|;
   while lo < hi
@@ -138,5 +136,5 @@ method BinarySearch(a: seq<int>, key: int) returns (r: nat)
       return mid;
     }
   }
-  return |a|;
+  return -1;
 }
