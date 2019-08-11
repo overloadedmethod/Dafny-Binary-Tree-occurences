@@ -43,38 +43,65 @@ method FindLeft(q:seq<int>, key:int, seed:nat)returns(left:nat)
 
 
 method FindRight(q:seq<int>, key:int, seed:nat)returns(right:nat)
-requires Sorted(q)
-requires 0 <= seed <= |q|
-requires |q| > 0
-decreases |q| - seed
-ensures right <= |q|
-ensures forall i :: right <= i < |q| ==> q[i] > key
+	requires Sorted(q)
+	requires |q| > 0
+	requires 0<seed<|q|
+	requires q[seed] == key
+	ensures seed<=right
+	ensures right+1<|q| ==> q[right + 1] > key
 {
-	if seed < |q| && q[seed] > key {right:=seed;}
-	else if seed == |q| {right:=seed;}
-	else {right:= FindRight(q, key, seed + 1);}
+right:=seed;
+while right<|q| && q[right] == key{
+	right := right+1;
+}
 }
 
-// lemma SortedArrayIsSortedLemma(q:seq<int>, key:int, offset:nat)
-// 	requires Sorted(q)
-// 	requires offset + 1 < |q|
-// 	requires q[offset+1]>key
-// 	ensures forall i :: offset+1<=i<|q| ==> q[i] > key
-// {
+method FindInitialRight(q:seq<int>, key:int, seed:nat)returns(right:nat)
+	requires Sorted(q)
+	requires |q| > 0
+	requires 0<=seed<|q|
+	requires q[seed] == key
+	ensures 0<right<=|q|
+	ensures q[right-1]==key
+	ensures forall i :: right <= i < |q| ==> q[i] > key
+{
+	if |q| == 1{right:=1;}
+	else if seed == |q| - 1 {right:=|q|;}
+	else if seed == 0{
+		if q[seed+1]!=key {right:=1;}
+		else {right:=FindRight(q,key,seed+1);right:=right+1;}
+	}
+	else{
+		right:=FindRight(q,key,seed);right:=right+1;
+	}
+	// if |q| == 1 {right:=1;}
+	// else {
+	// 		if seed > 0 {
+	// 			right:=FindRight(q,key,seed);
+	// 			right:=right+1;
+	// 		}
+	// 		else{
+	// 			if q[seed+1] == key{
+	// 				right:=FindRight(q,key,seed+1);
+	// 				right:=right+1;
+	// 			}
+	// 			else{
+	// 				right:=1;
+	// 			}
+	// 		}
+	// 	}
+}
 
-// }
+method FindInitialLeft(q:seq<int>, key:int, seed:nat)returns(left:nat)
+	requires |q| > 0
+	requires 0<=seed<|q|
+	requires q[seed] == key
+	ensures 0<=left<|q|
+	ensures q[left]==key
+	ensures forall i :: 0 <= i < left ==> q[i] < key
+{
 
-// lemma SortedArrayIsSortedLemma(q:seq<int>, key:int, left:nat, right:nat)
-// 	requires Sorted(q)
-// 	requires |q| > 0
-// 	requires right <= |q|
-// 	requires left < right
-// 	requires left >= 0
-// 	requires forall i :: 0 <= i < left ==> q[i] < key
-// 	requires forall i :: right <= i < |q| ==> q[i] > key
-// 	ensures forall i :: left <= i < right ==> q[i] == key
-// {
-// }
+}
 
 method FindRange(q: seq<int>, key: int) returns (left: nat, right: nat)
 	requires Sorted(q)
@@ -83,21 +110,16 @@ method FindRange(q: seq<int>, key: int) returns (left: nat, right: nat)
 	ensures forall i :: right <= i < |q| ==> q[i] > key
 	ensures forall i :: left <= i < right ==> q[i] == key
   {
+		left:=|q|;
+		right:=0;
 		if |q| == 0 {left:=0;right:=0;}
 		else{
-			var r: int := BinarySearch(q, key);
-			var rightSeed:nat := if r > 0 then r else |q|-1;
-			assert 0<= rightSeed < |q|;
-			assume q[rightSeed] == key;
-			right := FindRight(q,key, rightSeed);
-			if right > 0 {
-				left := FindLeft(q,key, right -1);
-			}
-			else{left := FindLeft(q,key, right);}
-
-			assert left <= right;
+				var r: int := BinarySearch(q, key);
+				assume 0<=r<|q|;// if value is not exists in the array we cannot find range;
+				assert q[r] == key;
+				right := FindInitialRight(q,key,r);
+				left := FindInitialLeft(q,key,r);
 		}
-
 	}
 // TODO: perform a stepwise-refinement of this specification into iterative executable code (using loops);
 // you should document each step fully, stating the name of the applied law, the specification of called methods
