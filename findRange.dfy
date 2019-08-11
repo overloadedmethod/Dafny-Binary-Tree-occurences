@@ -4,17 +4,19 @@ method Main()
 	assert Sorted(q);
 	assert 10 in q;
 	var i,j := FindRange(q, 10);
-	print "The number of occurrences of 10 in the sorted sequence [1,2,2,5,10,10,10,23] is ";
-	print j-i;
-	print " (starting at index ";
-	print i;
-	print " and ending in ";
-	print j-1;
-	print ").\n";
-	assert i == 4 && j == 7 by {
-		assert q[0] <= q[1] <= q[2] <= q[3] < 10;
-		assert q[4] == q[5] == q[6] == 10;
-		assert 10 < q[7];
+	if i<=j {
+		print "The number of occurrences of 10 in the sorted sequence [1,2,2,5,10,10,10,23] is ";
+		print j-i;
+		print " (starting at index ";
+		print i;
+		print " and ending in ";
+		print j-1;
+		print ").\n";
+		assert i == 4 && j == 7 by {
+			assert q[0] <= q[1] <= q[2] <= q[3] < 10;
+			assert q[4] == q[5] == q[6] == 10;
+			assert 10 < q[7];
+		}
 	}
 }
 
@@ -90,20 +92,24 @@ method IterateLeft(q:seq<int>, key:int,prev:nat)returns(next:nat)
 
 method FindRange(q: seq<int>, key: int) returns (left: nat, right: nat)
 	requires Sorted(q)
-	ensures left <= right <= |q|
-	ensures forall i :: 0 <= i < left ==> q[i] < key
-	ensures forall i :: right <= i < |q| ==> q[i] > key
-	ensures forall i :: left <= i < right ==> q[i] == key
+	ensures left<=right ==> left <= right <= |q|
+	ensures left<=right ==> forall i :: 0 <= i < left ==> q[i] < key
+	ensures left<=right ==> forall i :: right <= i < |q| ==> q[i] > key
+	ensures left<=right ==> forall i :: left <= i < right ==> q[i] == key
   {
 		left:=|q|;
 		right:=0;
 		if |q| == 0 {left:=0;right:=0;}
 		else{
 				var r: int := BinarySearch(q, key);
-				assume 0<=r<|q|;// if value is not exists in the array we cannot find range;
-				assert q[r] == key;
-				right := FindInitialRight(q,key,r);
-				left := FindInitialLeft(q,key,r);
+				if r<0{
+					left:=|q|+1;right:=|q|;
+				}
+				else{
+					right := FindInitialRight(q,key, r);
+					left := FindInitialLeft(q,key, r);
+				}
+
 		}
 	}
 // TODO: perform a stepwise-refinement of this specification into iterative executable code (using loops);
