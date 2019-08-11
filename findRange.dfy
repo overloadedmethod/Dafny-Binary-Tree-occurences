@@ -27,34 +27,6 @@ predicate Left(q:seq<int>, left:nat, key:int){
 	0<=left<|q| && q[left] == key
 }
 
-method FindLeft(q:seq<int>, key:int, seed:nat)returns(left:nat)
-	requires Sorted(q)
-	decreases seed
-	requires |q| > 0
-	requires 0 <= seed < |q|
-	ensures left <= seed
-	ensures forall i :: 0 <= i < left ==> q[i] < key
-{
-	if seed == 0 {left:=0;}
-	else if q[seed] < key {left:=seed;}
-	else {left := FindLeft(q, key, seed - 1);}
-}
-
-
-
-method FindRight(q:seq<int>, key:int, seed:nat)returns(right:nat)
-	requires Sorted(q)
-	requires |q| > 0
-	requires 0<=seed<|q|
-	requires q[seed] == key
-	ensures seed<right
-	ensures seed < right <= |q| ==> q[right-1]==key
-	ensures right < |q| ==> q[right] > key
-	ensures seed < right <= |q|
-{
-	right:=IterateRight(q,key,seed);
-}
-
 method IterateRight(q:seq<int>, key:int,prev:nat)returns(next:nat)
 	requires Sorted(q)
 	requires |q| > 0
@@ -82,7 +54,7 @@ method FindInitialRight(q:seq<int>, key:int, seed:nat)returns(right:nat)
 {
 	if |q| == 1 || seed == |q| - 1{right:=|q|;}
 	else{
-		right:=FindRight(q,key,seed);
+		right:=IterateRight(q,key,seed);
 	}
 }
 
@@ -91,14 +63,29 @@ method FindInitialLeft(q:seq<int>, key:int, seed:nat)returns(left:nat)
 	requires |q| > 0
 	requires 0<=seed<|q|
 	requires q[seed] == key
-	ensures 0<=left<=seed ==> q[left] == key
-	ensures 0<left<=seed ==> q[left - 1] < key
-	ensures forall i :: 0 <= i < left ==> q[i] < key
-	// ensures 0<=left<|q|
-	// ensures q[left]==key
-	// ensures forall i :: 0 <= i < left ==> q[i] < key
+	ensures Left(q,left,key)
+	ensures left>0 ==> q[left-1]< key;
 {
+	if seed == 0 {left:=0;}
+	else{	left:=IterateLeft(q,key,seed);}
+}
 
+method IterateLeft(q:seq<int>, key:int,prev:nat)returns(next:nat)
+	requires Sorted(q)
+	requires |q| > 0
+	requires 0<prev<|q|
+	requires q[prev] == key
+	ensures next <= prev
+	ensures q[next] == key
+	ensures next>0 ==> q[next-1] < key
+	decreases prev
+{
+	if prev-1 == 0 {
+		if q[prev-1] == key{next:=0;}
+		else {next:=1;}
+	}
+	else if q[prev-1] == key {next:=IterateLeft(q,key,prev-1);}
+	else {next:=prev;}
 }
 
 method FindRange(q: seq<int>, key: int) returns (left: nat, right: nat)
@@ -113,10 +100,12 @@ method FindRange(q: seq<int>, key: int) returns (left: nat, right: nat)
 		if |q| == 0 {left:=0;right:=0;}
 		else{
 				var r: int := BinarySearch(q, key);
-				assume 0<=r<|q|;// if value is not exists in the array we cannot find range;
-				assert q[r] == key;
-				right := FindInitialRight(q,key,r);
-				left := FindInitialLeft(q,key,r);
+				// assume 0<=r<|q|;// if value is not exists in the array we cannot find range;
+				// if r < 0 {left:=0;right:=0;}
+				// else{
+					right := FindInitialRight(q,key,r);
+					left := FindInitialLeft(q,key,r);
+				// }
 		}
 	}
 // TODO: perform a stepwise-refinement of this specification into iterative executable code (using loops);
@@ -131,9 +120,9 @@ method FindRange(q: seq<int>, key: int) returns (left: nat, right: nat)
 // at most 10% of the grade will be dedicated to the efficiency and worst-case time complexity of your algorithm.
 
 
-method BinarySearch(a: seq<int>, key: int) returns (r: int)
+method BinarySearch(a: seq<int>, key: int) returns (r: nat)
   requires Sorted(a)
-  ensures 0 <= r ==> r < |a| && a[r] == key
+  ensures 0 <= r < |a| ==> r < |a| && a[r] == key
 {
   var lo, hi := 0, |a|;
   while lo < hi
@@ -149,5 +138,5 @@ method BinarySearch(a: seq<int>, key: int) returns (r: int)
       return mid;
     }
   }
-  return -1;
+  return |a|;
 }
