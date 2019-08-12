@@ -91,7 +91,7 @@ method IterateLeft(q:seq<int>, key:int,prev:nat)returns(next:nat)
 
 method FindRange(q: seq<int>, key: int) returns (left: nat, right: nat)
 	requires Sorted(q)
-	requires key in q
+	requires key in q // without this requirement we cannot ensure that first and fourth expressions will be ensured
 	ensures left <= right <= |q|
 	ensures forall i :: 0 <= i < left ==> q[i] < key
 	ensures forall i :: right <= i < |q| ==> q[i] > key
