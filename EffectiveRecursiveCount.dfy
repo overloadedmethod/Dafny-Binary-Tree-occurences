@@ -43,20 +43,6 @@ decreases t
 /**
 Recursive solution with lemma though it might work without lemma
  */
-lemma LCountingTree(tree: Tree, val: int, key:int, left: Tree, right: Tree, leftAcc: nat, rightAcc: nat)
-	requires rightAcc == NumbersInTree(right)[key] 
-	requires leftAcc == NumbersInTree(left)[key] 
-	requires  tree == Node(val,left,right) 
-	ensures (if val == key then 1 else 0) + leftAcc + rightAcc == NumbersInTree(tree)[key]
-{
-	calc {
-		NumbersInTree(tree)[key];
-	== { assert tree == Node(val,left,right); } 
-		(if val == key then 1 else 0) + NumbersInTree(left)[key] + NumbersInTree(right)[key];
-	== 
-		(if val == key then 1 else 0) + leftAcc + rightAcc;
-	}
-}
 
 method RecEffective(tree: Tree, key: int) returns (count: nat)
 	requires BST(tree)
@@ -80,7 +66,6 @@ method RecEffective(tree: Tree, key: int) returns (count: nat)
     }else{
 			rightAcc:= RecEffective(right, key);
     }
-		LCountingTree(tree, val, key, left, right, leftAcc, rightAcc); 
 		assert (if val == key then 1 else 0) +  leftAcc + rightAcc == NumbersInTree(tree)[key];
     count := (if val == key then 1 else 0) +  leftAcc + rightAcc;
 		assert count == NumbersInTree(tree)[key];
