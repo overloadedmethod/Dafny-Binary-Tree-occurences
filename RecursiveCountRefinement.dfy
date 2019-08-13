@@ -63,6 +63,21 @@ method CountOccurrences(t: Tree, key: int) returns (count: nat)
       }
   }
 
+  method CountOccurrences''(t: Tree, key: int) returns (count: nat)
+	requires BST(t)
+	ensures count == NumbersInTree(t)[key]
+  decreases t, 3
+  {
+    	// alternation
+      match t {
+        case Empty =>
+          count := CountOccurrencesTree1a(t, key);
+        case Node(n1, nt1, nt2) =>
+          assert t == t && 2 < 3;
+          count := CountOccurrencesTree1b(t, n1, nt1, nt2, key);
+      }
+  }
+
 
 method CountOccurrencesTree1a(t: Tree, key:int) returns (count: nat)
 	requires BST(t)
@@ -98,25 +113,27 @@ method CountOccurrencesTree2(t: Tree, n1: int, nt1: Tree, nt2: Tree, key:int) re
 {
 	// introduce local variable + following assignment + sequential composition + contract frame*2
 	var tmp1, tmp2;
-	assert t == t && 0 < 1;
-	tmp1 := CountOccurrencesTree3a(t, n1, nt1, nt2, key);
-  tmp1 := tmp1;
-	assert t == t && 0 < 1;
-	tmp2 := CountOccurrencesTree3b(t, n1, nt1, nt2, tmp1, key);
+  assert t == t && 0 < 1;
+  if key < n1{
+    tmp1 := CountOccurrencesTree3a(t, n1, nt1, nt2, key);
+  }else{
+    tmp1:= 0;
+  }
+  if n1 == key {tmp1:=tmp1+1;}
+  tmp2 := CountOccurrencesTree3b(t, n1, nt1, nt2, tmp1, key);
 	count := tmp1+tmp2;
 }
 
 method CountOccurrencesTree3a(nt: Tree, n1: int, nt1: Tree, nt2: Tree, key:int) returns (tmp1: nat)
 	requires BST(nt)
 	requires nt == Node(n1, nt1, nt2)
-	ensures tmp1 == NumbersInTree(nt1)[key] + (if n1 == key then 1 else 0) && nt == Node(n1, nt1, nt2)
+	ensures tmp1 == NumbersInTree(nt1)[key] && nt == Node(n1, nt1, nt2)
 	decreases nt, 0
 {
 	// recursive call (+ strengthen postcondition)
 	assert nt1 < nt; // structureal order
 	tmp1 := CountOccurrences(nt1, key);
 	Lemma3a(nt, n1, nt1, nt2, tmp1, key);
-  if n1 == key {tmp1:=tmp1+1;}
 }
 
 lemma Lemma3a(t: Tree, n1: int, nt1: Tree, nt2: Tree, tmp1: nat, key:int)
