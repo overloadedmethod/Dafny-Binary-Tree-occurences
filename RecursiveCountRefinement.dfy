@@ -142,19 +142,3 @@ lemma Lemma3b(nt: Tree, n1: int, nt1: Tree, nt2: Tree, tmp1: nat, tmp2: nat, key
 	requires tmp1 == NumbersInTree(nt1)[key] + (if n1 == key then 1 else 0)  && nt == Node(n1, nt1, nt2)
 	ensures tmp1+tmp2 == NumbersInTree(nt)[key]
 {}
-
-// redundant (thanks to Dafny's support for structural order)
-// but then later is indeed needed for the iterative version
-function TreeSize(nt: Tree): nat
-{
-	match nt {
-		case Empty => 1
-		case Node(n',nt1,nt2) => 1+TreeSize(nt1)+TreeSize(nt2)
-	}
-}
-
-function ForestSize(ntl: seq<Tree>): nat
-{
-	if ntl == [] then 0 else TreeSize(ntl[0]) + ForestSize(ntl[1..])
-}
-
