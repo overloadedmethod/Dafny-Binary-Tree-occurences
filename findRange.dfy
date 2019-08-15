@@ -91,21 +91,48 @@ method IterateLeft(q:seq<int>, key:int,prev:nat)returns(next:nat)
 
 method FindRange(q: seq<int>, key: int) returns (left: nat, right: nat)
 	requires Sorted(q)
-	requires key in q // without this requirement we cannot ensure that first and fourth expressions will be ensured
 	ensures left <= right <= |q|
 	ensures forall i :: 0 <= i < left ==> q[i] < key
 	ensures forall i :: right <= i < |q| ==> q[i] > key
 	ensures forall i :: left <= i < right ==> q[i] == key
   {
-		left:=|q|;
-		right:=0;
-		if |q| == 0 {left:=0;right:=0;}
+		if |q| == 0 || key < q[0] {left:=0;right:=0;}
+		else if q[|q| - 1] < key {left:=|q|;right:=|q|;}
+		else if |q| == 1 {
+			if q[0] == key {left:=0;right:=|q|;}
+			else {left:=0;right:=0;}
+		}
 		else{
-			var r: int := BinarySearch(q, key);
-			right := FindInitialRight(q,key, r);
-			left := FindInitialLeft(q,key, r);
+			left,right:= FindRangeInNotTrivialSeq(q,key);
 		}
 	}
+
+method FindRangeInNotTrivialSeq(q:seq<int>, key:int) returns(left:nat, right:nat)
+	requires Sorted(q)
+	requires |q| > 1
+	requires q[|q|-1]>=key
+	requires q[0]<=key
+	ensures left <= right <= |q|
+	ensures forall i :: 0 <= i < left ==> q[i] < key
+	ensures forall i :: right <= i < |q| ==> q[i] > key
+	ensures forall i :: left <= i < right ==> q[i] == key
+{
+		if q[0] == key {left:=0;right:=FindInitialRight(q,key, 0);}
+		else if q[|q|-1] == key {right:=|q|;left:=FindInitialLeft(q,key, |q|-1);}
+		else{
+			var mid: int := BinarySearch(q, key);
+			if mid < |q| && q[mid] == key{
+				right := FindInitialRight(q,key, mid);
+				left := FindInitialLeft(q,key, mid);
+			}
+			else {
+				assert key !in q;
+				right:= mid;
+				left:=mid;
+			}
+		}
+
+}
 
 // TODO: perform a stepwise-refinement of this specification into iterative executable code (using loops);
 // you should document each step fully, stating the name of the applied law, the specification of called methods
@@ -120,111 +147,92 @@ method FindRange(q: seq<int>, key: int) returns (left: nat, right: nat)
 
 
 
-predicate Inv(q: seq<int>, key: int, i: nat, j: nat, k: nat)
+// method BinarySearch(a: array<int>, key: int) returns (r: int,found:bool)
+//   requires forall i,j :: 0 <= i < j < a.Length ==> a[i] <= a[j]
+//   ensures 0 <= r ==> r < a.Length && a[r] == key
+//   ensures r < 0 ==> key !in a[..]
+// {
+//   var lo, hi := 0, a.Length;
+// 	var mid;
+// 	found:=false;
+//   while lo < hi && !found
+//     invariant 0 <= lo <= hi <= a.Length
+//     invariant key !in a[..lo] && key !in a[hi..]
+//   {
+//     mid := (lo + hi) / 2;
+//     if key < a[mid] {
+//       hi := mid;
+//     } else if a[mid] < key {
+//       lo := mid + 1;
+//     } else {
+// 			found:=true;
+//     }
+//   }
+//   r:=mid;
+// }
+
+method BinarySearch(q: seq<int>, key: int) returns (mid: nat)
+  requires Sorted(q)
+	requires |q| > 1
+	requires q[0] < key
+	requires q[|q|-1] > key
+	ensures key in q ==> 0<=mid<|q|
+	ensures key in q ==> q[mid] == key
+	ensures key !in q ==> 0<=mid<=|q|
+	ensures key !in q && 0<=mid<|q| ==> q[mid] > key
+	ensures key !in q && 0<=mid-1<|q| ==> q[mid - 1] < key
 {
-	i < k <= |q| && j == (i+k)/2 && Sorted(q) && key in q[i..k]
-}
-
-method BinarySearch(q: seq<int>, key: int) returns (j: nat)
-	requires Sorted(q) && key in q
-	ensures j < |q| && q[j] == key
-{
-	// introduce local variable + strengthen postcondition
-	var i, k;
-	i, j, k := BinarySearch1(q, key);
-	LemmaStrngthenPostcondition(q, key, i, j, k);
-}
-
-lemma LemmaStrngthenPostcondition(q: seq<int>, key: int, i: nat, j: nat, k: nat)
-	requires Inv(q, key, i, j, k) && q[j] == key
-	ensures j < |q| && q[j] == key
-// recall the definition of Inv:
-{}
-
-method BinarySearch1(q: seq<int>, key: int) returns (i: nat, j: nat, k: nat)
-	requires Sorted(q) && key in q
-	ensures Inv(q, key, i, j, k) && q[j] == key
-{
-	// leading assignment + weaken precondition
-	assert 0 == 0 && |q|/2 == |q|/2 && |q| == |q|;
-	i, j, k := 0, |q|/2, |q|;
-	assert i == 0 && j == |q|/2 && k == |q|;
-	LemmaWeakenPrecondition(q, key, i, j, k);
-	i, j, k := BinarySearch2(q, key, i, j, k);
-}
-
-lemma LemmaWeakenPrecondition(q: seq<int>, key: int, i: nat, j: nat, k: nat)
-	requires Sorted(q) && key in q
-	requires i == 0 && j == |q|/2 && k == |q|
-	ensures Inv(q, key, i, j, k)
-// recall the definition of Inv:
-{}
-
-method BinarySearch2(q: seq<int>, key: int, i0: nat, j0: nat, k0: nat) returns (i: nat, j: nat, k: nat)
-	requires Inv(q, key, i0, j0, k0)
-	ensures Inv(q, key, i, j, k) && q[j] == key
-{
-	i, j, k := i0, j0, k0;
-	// iteration
-	while q[j] != key
-		invariant Inv(q, key, i, j, k)
-		decreases k-i
-	{
-		i, j, k := BinarySearch3(q, key, i, j, k);
+  var lo, hi := 0, |q|;
+  while lo < hi
+    invariant 0 <= lo <= hi <= |q|
+    invariant key !in q[..lo] && key !in q[hi..]
+  {
+    mid := (lo + hi) / 2;
+    if key < q[mid] {
+      hi := mid;
+    } else if q[mid] < key{
+      lo := mid + 1;
+    } else {
+			assert key in q;
+			return mid;
+    }
+  }
+	assert key !in q;
+	assert lo >= hi;
+	if lo >= |q| {lo:=|q| - 1;}
+	
+	mid:=lo;
+	assert q[mid] > key;
+	while mid>0 && q[mid-1]>key{
+		mid:=mid-1;
 	}
+	// assume q[mid] > key;
+	
+
 }
 
-method BinarySearch3(q: seq<int>, key: int, i0: nat, j0: nat, k0: nat) returns (i: nat, j: nat, k: nat)
-	requires Inv(q, key, i0, j0, k0) && q[j0] != key
-	ensures Inv(q, key, i, j, k) && 0 <= k-i < k0-i0
-{
-	i, j, k := i0, j0, k0;
-	// following assignment + contract frame
-	i, k := BinarySearch4(q, key, i, j, k);
-	j := (i+k)/2;
-}
 
-method BinarySearch4(q: seq<int>, key: int, i0: nat, j: nat, k0: nat) returns (i: nat, k: nat)
-	requires Inv(q, key, i0, j, k0) && q[j] != key
-	ensures Inv(q, key, i, (i+k)/2, k) && 0 <= k-i < k0-i0
-{
-	i, k := i0, k0;
-	// alternation + contract frame(*2)
-	if q[j] > key
-	{
-		k := BinarySearch5a(q, key, i, j, k);
-	}
-	else
-	{
-		i := BinarySearch5b(q, key, i, j, k);
-	}
-}
 
-method BinarySearch5a(q: seq<int>, key: int, i: nat, j: nat, k0: nat) returns (k: nat)
-	requires Inv(q, key, i, j, k0) && q[j] > key
-	ensures Inv(q, key, i, (i+k)/2, k) && 0 <= k-i < k0-i
-{
-	// assignment
-	Lemma5a(q, key, i, j, k0);
-	k := j;
-}
-
-lemma Lemma5a(q: seq<int>, key: int, i: nat, j: nat, k: nat)
-	requires Inv(q, key, i, j, k) && q[j] > key
-	ensures Inv(q, key, i, (i+j)/2, j) && 0 <= j-i < k-i
-{}
-
-method BinarySearch5b(q: seq<int>, key: int, i0: nat, j: nat, k: nat) returns (i: nat)
-	requires Inv(q, key, i0, j, k) && q[j] < key
-	ensures Inv(q, key, i, (i+k)/2, k) && 0 <= k-i < k-i0
-{
-	// assignment
-	Lemma5b(q, key, i0, j, k);
-	i := j;
-}
-
-lemma Lemma5b(q: seq<int>, key: int, i: nat, j: nat, k: nat)
-	requires Inv(q, key, i, j, k) && q[j] < key
-	ensures Inv(q, key, j, (j+k)/2, k) && 0 <= k-j < k-i
-{}
-
+// method BinarySearch(q: seq<int>, key: int) returns (mid: nat)
+//   requires Sorted(q)
+// 	requires |q| > 0
+// 	ensures key in q ==> q[mid] == key
+// 	ensures key !in q && 0<mid<|q| ==> q[mid - 1] < key
+// 	ensures key !in q && 0<mid<|q|-1 ==> q[mid + 1] > key
+// {
+//   var lo, hi := 0, |q|-1;
+//   while lo < hi && hi - lo != 1
+//     invariant 0 <= lo <= hi < |q|
+//     invariant key !in q[..lo] && key !in q[hi..]
+//   {
+//     mid := (lo + hi) / 2;
+//     if key < q[mid] {
+//       hi := mid;
+//     } else if q[mid] < key {
+//       lo := mid + 1;
+//     } else {
+// 			return mid;
+//     }
+//   }
+//   return mid;
+// }
