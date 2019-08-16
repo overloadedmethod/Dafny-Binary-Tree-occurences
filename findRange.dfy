@@ -146,31 +146,6 @@ method FindRangeInNotTrivialSeq(q:seq<int>, key:int) returns(left:nat, right:nat
 // at most 10% of the grade will be dedicated to the efficiency and worst-case time complexity of your algorithm.
 
 
-
-// method BinarySearch(a: array<int>, key: int) returns (r: int,found:bool)
-//   requires forall i,j :: 0 <= i < j < a.Length ==> a[i] <= a[j]
-//   ensures 0 <= r ==> r < a.Length && a[r] == key
-//   ensures r < 0 ==> key !in a[..]
-// {
-//   var lo, hi := 0, a.Length;
-// 	var mid;
-// 	found:=false;
-//   while lo < hi && !found
-//     invariant 0 <= lo <= hi <= a.Length
-//     invariant key !in a[..lo] && key !in a[hi..]
-//   {
-//     mid := (lo + hi) / 2;
-//     if key < a[mid] {
-//       hi := mid;
-//     } else if a[mid] < key {
-//       lo := mid + 1;
-//     } else {
-// 			found:=true;
-//     }
-//   }
-//   r:=mid;
-// }
-
 method BinarySearch(q: seq<int>, key: int) returns (mid: nat)
   requires Sorted(q)
 	requires |q| > 1
@@ -199,40 +174,37 @@ method BinarySearch(q: seq<int>, key: int) returns (mid: nat)
   }
 	assert key !in q;
 	assert lo >= hi;
+	assert hi >= 0;
+	
 	if lo >= |q| {lo:=|q| - 1;}
-	
-	mid:=lo;
-	assert q[mid] > key;
-	while mid>0 && q[mid-1]>key{
-		mid:=mid-1;
-	}
-	// assume q[mid] > key;
-	
+	else if lo == 0 {lo:=1;}
+	var seed:nat;
+
+	assert 0<lo<|q|;
+	if q[lo] > key {seed:=lo;}
+	else if lo+1<|q| && q[lo+1] > key {seed:=lo+1;}
+	else if lo + 2 < |q| && q[lo+2] > key {seed:=lo+2;}
+	else {seed:=|q|-1;}
+
+	mid := FindNearestBiggest(q,key,seed);
 
 }
 
+method FindNearestBiggest(q:seq<int>,key:int,seed:nat)returns(mid:nat)
+requires key !in q
+requires 0<seed<|q|
+requires q[0] < key
+requires q[|q| - 1] > key
+requires q[seed] > key
+ensures 0<mid<|q|
+ensures q[mid] > key
+ensures q[mid-1] < key
+{
+	mid:=seed;
+	assert q[mid] > key;
+	if seed - 1 == 0 {mid:=seed;}
+	else if q[seed - 1] > key {mid:=FindNearestBiggest(q,key,seed - 1);}
+	else { mid:=seed;}
+}
 
 
-// method BinarySearch(q: seq<int>, key: int) returns (mid: nat)
-//   requires Sorted(q)
-// 	requires |q| > 0
-// 	ensures key in q ==> q[mid] == key
-// 	ensures key !in q && 0<mid<|q| ==> q[mid - 1] < key
-// 	ensures key !in q && 0<mid<|q|-1 ==> q[mid + 1] > key
-// {
-//   var lo, hi := 0, |q|-1;
-//   while lo < hi && hi - lo != 1
-//     invariant 0 <= lo <= hi < |q|
-//     invariant key !in q[..lo] && key !in q[hi..]
-//   {
-//     mid := (lo + hi) / 2;
-//     if key < q[mid] {
-//       hi := mid;
-//     } else if q[mid] < key {
-//       lo := mid + 1;
-//     } else {
-// 			return mid;
-//     }
-//   }
-//   return mid;
-// }
