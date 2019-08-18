@@ -27,6 +27,8 @@ predicate Left(q:seq<int>, left:nat, key:int){
 	0<=left<|q| && q[left] == key
 }
 
+
+//Contract Frame
 method IterateRight(q:seq<int>, key:int,prev:nat)returns(next:nat)
 	requires Sorted(q)
 	requires |q| > 0
@@ -38,11 +40,14 @@ method IterateRight(q:seq<int>, key:int,prev:nat)returns(next:nat)
 	ensures prev<=next<=|q|
 	decreases |q| - prev
 {
+	//Alteration
 	if prev+1 == |q| {next:=|q|;}
+	//Following Assignment
 	else if q[prev+1] == key {next:=IterateRight(q,key,prev+1);}
 	else {next:=prev+1;}
 }
 
+//Sequential Composition
 method FindInitialRight(q:seq<int>, key:int, seed:nat)returns(right:nat)
 	requires Sorted(q)
 	requires |q| > 0
@@ -52,12 +57,13 @@ method FindInitialRight(q:seq<int>, key:int, seed:nat)returns(right:nat)
 	ensures right < |q| ==> q[right] > key
 	ensures right<=|q|
 {
+	//Alteration
 	if |q| == 1 || seed == |q| - 1{right:=|q|;}
-	else{
-		right:=IterateRight(q,key,seed);
-	}
+	// Following Assignment
+	else{right:=IterateRight(q,key,seed);}
 }
 
+//Sequential Composition
 method FindInitialLeft(q:seq<int>, key:int, seed:nat)returns(left:nat)
 	requires Sorted(q)
 	requires |q| > 0
@@ -66,10 +72,13 @@ method FindInitialLeft(q:seq<int>, key:int, seed:nat)returns(left:nat)
 	ensures Left(q,left,key)
 	ensures left>0 ==> q[left-1]< key;
 {
+	//Alteration
 	if seed == 0 {left:=0;}
+	//Following Assignment
 	else{	left:=IterateLeft(q,key,seed);}
 }
 
+//Contract Frame
 method IterateLeft(q:seq<int>, key:int,prev:nat)returns(next:nat)
 	requires Sorted(q)
 	requires |q| > 0
@@ -80,10 +89,12 @@ method IterateLeft(q:seq<int>, key:int,prev:nat)returns(next:nat)
 	ensures next>0 ==> q[next-1] < key
 	decreases prev
 {
+	//Alteration
 	if prev-1 == 0 {
 		if q[prev-1] == key{next:=0;}
 		else {next:=1;}
 	}
+	//Following Assignment
 	else if q[prev-1] == key {next:=IterateLeft(q,key,prev-1);}
 	else {next:=prev;}
 }
@@ -96,13 +107,16 @@ method FindRange(q: seq<int>, key: int) returns (left: nat, right: nat)
 	ensures forall i :: right <= i < |q| ==> q[i] > key
 	ensures forall i :: left <= i < right ==> q[i] == key
   {
+		// Alternation
 		if |q| == 0 || key < q[0] {left:=0;right:=0;}
 		else if q[|q| - 1] < key {left:=|q|;right:=|q|;}
 		else if |q| == 1 {
+			// Alternation
 			if q[0] == key {left:=0;right:=|q|;}
 			else {left:=0;right:=0;}
 		}
 		else{
+			// Weaken Precondition
 			left,right:= FindRangeInNotTrivialSeq(q,key);
 		}
 	}
@@ -120,9 +134,13 @@ method FindRangeInNotTrivialSeq(q:seq<int>, key:int) returns(left:nat, right:nat
 		if q[0] == key {left:=0;right:=FindInitialRight(q,key, 0);}
 		else if q[|q|-1] == key {right:=|q|;left:=FindInitialLeft(q,key, |q|-1);}
 		else{
+			// Introduce Local Variable
 			var mid: int := BinarySearch(q, key);
+			// Alternation
 			if mid < |q| && q[mid] == key{
+				// Sequential Composition
 				right := FindInitialRight(q,key, mid);
+				// Sequential Composition
 				left := FindInitialLeft(q,key, mid);
 			}
 			else {
@@ -158,11 +176,13 @@ method BinarySearch(q: seq<int>, key: int) returns (mid: nat)
 	ensures key !in q && 0<=mid-1<|q| ==> q[mid - 1] < key
 {
   var lo, hi := 0, |q|;
+	//Iteration
   while lo < hi
     invariant 0 <= lo <= hi <= |q|
     invariant key !in q[..lo] && key !in q[hi..]
   {
     mid := (lo + hi) / 2;
+		//Alteration
     if key < q[mid] {
       hi := mid;
     } else if q[mid] < key{
@@ -176,6 +196,8 @@ method BinarySearch(q: seq<int>, key: int) returns (mid: nat)
 	assert lo >= hi;
 	assert hi >= 0;
 	
+
+	// Sequential Composition
 	if lo >= |q| {lo:=|q| - 1;}
 	else if lo == 0 {lo:=1;}
 	var seed:nat;
@@ -190,6 +212,7 @@ method BinarySearch(q: seq<int>, key: int) returns (mid: nat)
 
 }
 
+//Contract Frame
 method FindNearestBiggest(q:seq<int>,key:int,seed:nat)returns(mid:nat)
 requires key !in q
 requires 0<seed<|q|

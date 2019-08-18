@@ -2,3 +2,4 @@ combinedCount.exe
 combinedCount.pdb
 *.exe
 *.pdb
+.vscode/
