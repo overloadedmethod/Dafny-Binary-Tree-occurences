@@ -28,7 +28,7 @@ predicate Left(q:seq<int>, left:nat, key:int){
 }
 
 
-//Contract Frame
+
 method IterateRight(q:seq<int>, key:int,prev:nat)returns(next:nat)
 	requires Sorted(q)
 	requires |q| > 0
@@ -41,8 +41,10 @@ method IterateRight(q:seq<int>, key:int,prev:nat)returns(next:nat)
 	decreases |q| - prev
 {
 	//Alteration
+	//Assignment
 	if prev+1 == |q| {next:=|q|;}
 	//Following Assignment
+	//Contract Frame
 	else if q[prev+1] == key {next:=IterateRight(q,key,prev+1);}
 	else {next:=prev+1;}
 }
@@ -58,6 +60,7 @@ method FindInitialRight(q:seq<int>, key:int, seed:nat)returns(right:nat)
 	ensures right<=|q|
 {
 	//Alteration
+	//Assignment
 	if |q| == 1 || seed == |q| - 1{right:=|q|;}
 	// Following Assignment
 	else{right:=IterateRight(q,key,seed);}
@@ -73,12 +76,13 @@ method FindInitialLeft(q:seq<int>, key:int, seed:nat)returns(left:nat)
 	ensures left>0 ==> q[left-1]< key;
 {
 	//Alteration
+	//Assignment
 	if seed == 0 {left:=0;}
 	//Following Assignment
 	else{	left:=IterateLeft(q,key,seed);}
 }
 
-//Contract Frame
+
 method IterateLeft(q:seq<int>, key:int,prev:nat)returns(next:nat)
 	requires Sorted(q)
 	requires |q| > 0
@@ -95,6 +99,7 @@ method IterateLeft(q:seq<int>, key:int,prev:nat)returns(next:nat)
 		else {next:=1;}
 	}
 	//Following Assignment
+	//Contract Frame
 	else if q[prev-1] == key {next:=IterateLeft(q,key,prev-1);}
 	else {next:=prev;}
 }
@@ -180,6 +185,7 @@ method BinarySearch(q: seq<int>, key: int) returns (mid: nat)
   while lo < hi
     invariant 0 <= lo <= hi <= |q|
     invariant key !in q[..lo] && key !in q[hi..]
+		decreases hi - lo
   {
     mid := (lo + hi) / 2;
 		//Alteration
